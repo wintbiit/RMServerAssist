@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using BepInEx;
 using BepInEx.Logging;
 using EmbedIO;
+using EmbedIO.Authentication;
 using EmbedIO.Routing;
 using EmbedIO.WebApi;
 using RMServerAssist.Router;
@@ -19,6 +20,7 @@ public class Plugin : BaseUnityPlugin
     public const int Port = 35333;
 
     private WebServer _webServer;
+    private PluginConfig _pluginConfig;
 
     private void Awake()
     {
@@ -30,6 +32,8 @@ public class Plugin : BaseUnityPlugin
         yield return new WaitUntil(() => App.Instance != null && App.Instance.GetState() == eAppState.Room);
         
         Logger.LogInfo("Initializing RMServerAssist...");
+        
+        _pluginConfig = PluginConfig.Load();
 
         App.Instance.ServeruiID = 71;
 
@@ -46,7 +50,12 @@ public class Plugin : BaseUnityPlugin
                 .WithController<RobotController>())
             .WithWebApi("/api/v1", m => m
                 .WithController<ApiRootController>());
-        
+
+        if (!string.IsNullOrEmpty(_pluginConfig.apiKey))
+        {
+            _webServer.WithModule(new ApiKeyModule("/api", _pluginConfig.apiKey));
+            Logger.LogInfo($"Web server successfully initialized with API key, send requests with header '{ApiKeyModule.ApiKeyHeaderKey}'");
+        }
 
         _webServer.StateChanged += (sender, args) =>
         {
