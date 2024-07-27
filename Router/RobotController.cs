@@ -21,7 +21,7 @@ public partial class RobotController
     public async Task<Response<int>> LevelUp(int id, [QueryField] int value)
     {
         await Task.Yield();
-        var user = id > 100 ? _redRobots[id] : _blueRobots[id];
+        var user = _robots[id];
         if (user == null)
         {
             return Response<int>.Create(-1, "not found");

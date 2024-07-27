@@ -11,10 +11,8 @@ namespace RMServerAssist.Router;
 
 public partial class RobotController : WebApiController
 {
-    private readonly Dictionary<int, RobotItem> _redRobotItems = new Dictionary<int, RobotItem>();
-    private readonly Dictionary<int, RobotItem> _blueRobotItems = new Dictionary<int, RobotItem>();
-    private readonly Dictionary<int, User> _redRobots = new Dictionary<int, User>();
-    private readonly Dictionary<int, User> _blueRobots = new Dictionary<int, User>();
+    private readonly Dictionary<int, RobotItem> _robotItems = new Dictionary<int, RobotItem>();
+    private readonly Dictionary<int, User> _robots = new Dictionary<int, User>();
 
     public RobotController()
     {
@@ -26,26 +24,15 @@ public partial class RobotController : WebApiController
             var robotId = robotItem.GetFieldValue<int>("robot_id");
             var user = robotItem.GetFieldValue<User>("robot");
             
-            if (team == 0)
-            {
-                _redRobotItems[robotId] = robotItem;
-                _redRobots[robotId] = user;
-            }
-            else
-            {
-                _blueRobotItems[robotId] = robotItem;
-                _blueRobots[robotId] = user;
-            }
+            _robotItems[robotId] = robotItem;
+            _robots[robotId] = user;
         }
     }
     
     [Route(HttpVerbs.Get, "/list")]
     public async Task<Response<RobotInfo[]>> ListRobots()
     {
-        var redRobotInfos = await Task.WhenAll(_redRobotItems.Values.Select(i => GetRobotInfo(i)));
-        var blueRobotInfos = await Task.WhenAll(_blueRobotItems.Values.Select(i => GetRobotInfo(i)));
-        
-        var robotInfos = redRobotInfos.Concat(blueRobotInfos).ToArray();
+        var robotInfos = await Task.WhenAll(_robotItems.Values.Select(async robotItem => await GetRobotInfo(robotItem)));
         
         return Response<RobotInfo[]>.Create(robotInfos);
     }
@@ -53,26 +40,12 @@ public partial class RobotController : WebApiController
     [Route(HttpVerbs.Get, "/{id}")]
     public async Task<Response<RobotInfo>> GetRobotInfo(int id)
     {
-        if (id > 100)
+        if (!_robotItems.TryGetValue(id, out var robotItem))
         {
-            if (!_blueRobotItems.TryGetValue(id, out var robotItem))
-            {
-                return Response<RobotInfo>.Create(default, "not found");
-            }
-            
-            return Response<RobotInfo>.Create(await GetRobotInfo(robotItem));
-        }
-        else
-        {
-            if (!_redRobotItems.TryGetValue(id, out var robotItem))
-            {
-                return Response<RobotInfo>.Create(default, "not found");
-            }
-            
-            return Response<RobotInfo>.Create(await GetRobotInfo(robotItem));
+            return Response<RobotInfo>.Create(default, "not found");
         }
         
-        return Response<RobotInfo>.Create(default, "invalid team");
+        return Response<RobotInfo>.Create(await GetRobotInfo(robotItem));
     }
     
     private async Task<RobotInfo> GetRobotInfo(RobotItem robotItem, User user = null)
@@ -106,7 +79,8 @@ public partial class RobotController : WebApiController
             isBalance = user.m_data.m_performance.isBalance == 1,
             bullet = bullet,
             hp = user.GetVal(enumAttr.attr_Player_HP),
-            maxHp = user.GetVal(enumAttr.attr_Player_HPMax)
+            maxHp = user.GetVal(enumAttr.attr_Player_HPMax),
+            invincible = Utility.CheckInvincibleBuffExist((int) user.m_data.m_uid)
         };
     }
 }

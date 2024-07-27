@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 using BepInEx;
 using BepInEx.Logging;
 using EmbedIO;
-using EmbedIO.Authentication;
 using EmbedIO.Routing;
 using EmbedIO.WebApi;
 using RMServerAssist.Router;
@@ -32,6 +31,8 @@ public class Plugin : BaseUnityPlugin
         yield return new WaitUntil(() => App.Instance != null && App.Instance.GetState() == eAppState.Room);
         
         Logger.LogInfo("Initializing RMServerAssist...");
+        
+        App.Instance.AddEvent(1, OnRecvProto);
         
         _pluginConfig = PluginConfig.Load();
 
@@ -86,9 +87,16 @@ public class Plugin : BaseUnityPlugin
         Logger.LogInfo($"Server started at port {Port}");
     }
     
+    private void OnRecvProto(RecvProtoEvent evt)
+    {
+        Logger.LogDebug($"Recv proto: {evt.header.protoID}, type={evt.header.protoType}, len={evt.header.dataLen}");
+    }
+    
     private void OnDestroy()
     {
         _webServer?.Dispose();
+        
+        App.Instance.RemoveEvent(7, OnRecvProto);
     }
 }
 

@@ -16,4 +16,5 @@ public struct RobotInfo
     public int bullet;
     public float hp;
     public float maxHp;
+    public bool invincible;
 }
