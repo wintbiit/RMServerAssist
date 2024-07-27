@@ -49,12 +49,12 @@ public class Plugin : BaseUnityPlugin
                 .WithController<JudgeController>())
             .WithWebApi("/api/v1/robot", m => m
                 .WithController<RobotController>())
-            .WithWebApi("/api/v1", m => m
+            .WithWebApi("/api", m => m
                 .WithController<ApiRootController>());
 
         if (!string.IsNullOrEmpty(_pluginConfig.apiKey))
         {
-            _webServer.WithModule(new ApiKeyModule("/api", _pluginConfig.apiKey));
+            _webServer.WithModule(new ApiKeyModule("/api/v1", _pluginConfig.apiKey));
             Logger.LogInfo($"Web server successfully initialized with API key, send requests with header '{ApiKeyModule.ApiKeyHeaderKey}'");
         }
 
@@ -116,6 +116,17 @@ public class ApiRootController : WebApiController
         await Task.Yield();
         
         return Response<AppVersion>.Create(new AppVersion(App.Instance.serverVersion, App.Instance.ServerUIVersion, PluginInfo.PLUGIN_VERSION));
+    }
+    
+    private string _apiRes = ResourceHelper.GetEmbeddedResource("RMServerAssist.RMServerAssist.html");
+
+    [Route(HttpVerbs.Get, "/openapi.html")]
+    public async Task OpenApi()
+    {
+        await Task.Yield();
+
+        await using var writer = HttpContext.OpenResponseText();
+        await writer.WriteAsync(_apiRes);
     }
 
     [Serializable]

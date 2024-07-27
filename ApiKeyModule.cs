@@ -10,6 +10,11 @@ public class ApiKeyModule([NotNull] string baseRoute, string apiKey) : WebModule
     
     protected override Task OnRequestAsync(IHttpContext context)
     {
+        if (context.Request.HttpVerb == HttpVerbs.Get && context.Request.Url.AbsolutePath.EndsWith(".html"))
+        {
+            return Task.CompletedTask;
+        }
+        
         var requestKey = context.Request.Headers.Get(ApiKeyHeaderKey);
         if (!string.IsNullOrEmpty(apiKey) && requestKey == apiKey)
         {

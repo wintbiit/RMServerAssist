@@ -36,4 +36,12 @@
       <HintPath>Lib\Unity.TextMeshPro.dll</HintPath>
     </Reference>
   </ItemGroup>
+  
+  <ItemGroup>
+    <None Remove="static\RMServerAssist.html" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <EmbeddedResource Include="RMServerAssist.html" />
+  </ItemGroup>
 </Project>
