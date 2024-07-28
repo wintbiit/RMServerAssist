@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections;
+using System.IO;
 using System.Threading.Tasks;
 using BepInEx;
 using BepInEx.Logging;
@@ -31,8 +32,6 @@ public class Plugin : BaseUnityPlugin
         yield return new WaitUntil(() => App.Instance != null && App.Instance.GetState() == eAppState.Room);
         
         Logger.LogInfo("Initializing RMServerAssist...");
-        
-        App.Instance.AddEvent(1, OnRecvProto);
         
         _pluginConfig = PluginConfig.Load();
 
@@ -86,17 +85,39 @@ public class Plugin : BaseUnityPlugin
                     
         Logger.LogInfo($"Server started at port {Port}");
     }
-    
-    private void OnRecvProto(RecvProtoEvent evt)
+
+    private void LateUpdate()
     {
-        Logger.LogDebug($"Recv proto: {evt.header.protoID}, type={evt.header.protoType}, len={evt.header.dataLen}");
+        if (Input.GetKeyDown(KeyCode.F11))
+        {
+            ProtoGen();
+        }
+    }
+
+    private static async void ProtoGen()
+    {
+        Logger.LogInfo("Generating proto files...");
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        watch.Start();
+        
+        await Task.Yield();
+        var dir = Path.Combine(Application.dataPath, "../proto");
+        if (!Directory.Exists(dir))
+        {
+            Directory.CreateDirectory(dir);
+        }
+        ProtoDumper.DumpProtoId(Path.Combine(dir, "proto.csv"));
+        ProtoDumper.DumpBattleProtoId(Path.Combine(dir, "battle_proto.csv"));
+        await ProtoDumper.DumpProtoDef(dir);
+        
+        watch.Stop();
+        
+        Logger.LogInfo($"Proto files generated in {watch.ElapsedMilliseconds}ms");
     }
     
     private void OnDestroy()
     {
         _webServer?.Dispose();
-        
-        App.Instance.RemoveEvent(7, OnRecvProto);
     }
 }
 
