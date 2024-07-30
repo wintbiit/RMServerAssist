@@ -78,9 +78,25 @@ public static class ProtoDumper
         await writer.WriteLineAsync("Field,Type");
         
         foreach (var field in type.GetFields(BindingFlags.Public | BindingFlags.Instance))
-        { 
-            await writer.WriteLineAsync($"{field.Name},{field.FieldType.Name}");
-            types.Add(field.FieldType.Name);
+        {
+            var fieldName = field.FieldType.Name;
+            
+            // if field is a list, get the type of the list
+            if (field.FieldType.IsGenericType)
+            {
+                fieldName = field.FieldType.GetGenericArguments()[0].Name;
+                fieldName = $"{fieldName}[]";
+
+                if (field.FieldType.GetGenericArguments()[0].IsGenericType)
+                {
+                    fieldName = field.FieldType.GetGenericArguments()[0].GetGenericArguments()[0].Name;
+                    fieldName = $"{fieldName}[][]";
+                }
+            }
+            
+            types.Add(fieldName);
+            
+            await writer.WriteLineAsync($"{field.Name},{fieldName}");
         }
         
         await writer.FlushAsync();

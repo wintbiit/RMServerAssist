@@ -109,6 +109,30 @@ public class Plugin : BaseUnityPlugin
         ProtoDumper.DumpProtoId(Path.Combine(dir, "proto.csv"));
         ProtoDumper.DumpBattleProtoId(Path.Combine(dir, "battle_proto.csv"));
         await ProtoDumper.DumpProtoDef(dir);
+
+        var exampleProtoId = S1ProtoDef.ID_S1ProtoLoginReq;
+        var exampleProto = new S1ProtoLoginReq()
+        {
+            account = $"s0unit_client_{App.Instance.ClientId}_{App.Instance.ClientId}",
+            password = "39475983745",
+            version = 1.521f,
+            tid = App.Instance.ClientTid,
+            teamid = App.Instance.ClientTeamId
+        };
+        
+        var buffer = new ByteBuffer();
+        new S1ProtoHeader()
+        {
+            protoID = (ushort) exampleProtoId,
+            dataLen = (ushort) exampleProto.GetSize(),
+            sequenceID = Common.AutoIncrementIndex(0)
+        }.Pack(buffer);
+        exampleProto.Pack(buffer);
+        var bytes = buffer.ToBytes();
+        
+        Logger.LogInfo($"Example proto generated: {exampleProtoId} {exampleProto.GetType().Name} {bytes.Length} bytes");
+        var fp = Path.Combine(dir, $"{exampleProtoId}_{exampleProto.GetType().Name}.bin");
+        await File.WriteAllBytesAsync(fp, bytes);
         
         watch.Stop();
         
@@ -139,7 +163,7 @@ public class ApiRootController : WebApiController
         return Response<AppVersion>.Create(new AppVersion(App.Instance.serverVersion, App.Instance.ServerUIVersion, PluginInfo.PLUGIN_VERSION));
     }
     
-    private string _apiRes = ResourceHelper.GetEmbeddedResource("RMServerAssist.RMServerAssist.html");
+    private readonly string _apiRes = ResourceHelper.GetEmbeddedResource("RMServerAssist.RMServerAssist.html");
 
     [Route(HttpVerbs.Get, "/openapi.html")]
     public async Task OpenApi()
